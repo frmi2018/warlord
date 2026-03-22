@@ -6,75 +6,30 @@
 
 ## Rôle du fichier
 
-Ce fichier définit la **structure de vérité absolue** pour chaque carte du jeu. À partir du Sprint 1.3, il introduit une séparation nette entre les données statiques (nom, stats, faction) et la logique comportementale (effets, capacités spéciales).
-
-### La Règle d'Or
-
-Le système repose désormais sur une architecture orientée fichiers :
-
-- **Une carte = Un fichier** unique (ex: `src/data/cards/dwarf/axe-fighter.ts`).
-- Les fichiers globaux comme `cardDatabase.ts` deviennent des index **générés automatiquement** et ne doivent plus être édités manuellement.
+Le `CardDefinition` est la **source de vérité absolue** pour chaque carte individuelle du jeu. C'est l'objet complet tel qu'il est défini dans les fichiers de données (fichiers JSON ou TypeScript par faction).
 
 ---
 
-## Structure : Fusion de la Forme et du Fond
+## RÈGLE D'OR : Source de Vérité
 
-L'interface `CardDefinition` étend l'interface de base pour y ajouter la couche mécanique :
+Ce fichier régit la manière dont les cartes sont créées :
 
-### 1. Héritage de `DeckCard`
-
-Elle conserve toutes les propriétés physiques et identitaires de la carte :
-
-- Identifiants et visuels.
-- Statistiques de combat (AC, ATK, HP).
-- Type de carte et traits (Warlord, Undead, Elf, etc.).
-
-### 2. Couche `effects` (Optionnelle)
-
-C'est ici que réside l'intelligence de la carte.
-
-- **Cartes "Vanilla"** : La majorité des troupes n'ont pas d'effets complexes. Le champ `effects` est simplement absent, ce qui optimise la mémoire et simplifie le traitement.
-- **Cartes Spéciales** : Contient un tableau de `CardEffect`. Ces effets peuvent être **Passifs** (toujours actifs, ex: un bonus d'attaque aux voisins) ou **Actifs** (déclenchables par le joueur, ex: un Feat de soin).
+1. Une carte = Un fichier dans `src/data/cards/`.
+2. La `CardDefinition` fusionne les données statiques (`DeckCard`) et les effets complexes (`CardEffect[]`).
 
 ---
 
-## Flux de Données du Moteur
+## Composants de la Définition
 
-Le passage d'une définition de fichier à une carte jouable suit ce cycle :
-
-1. **Définition** : Un développeur crée un fichier `.ts` respectant `CardDefinition`.
-2. **Enregistrement** : Au démarrage, `effectRegistry.ts` scanne les définitions pour lier les fonctions logiques aux cartes.
-3. **Instanciation** : En jeu, `createDeck` utilise ces définitions pour créer des objets `Card` (qui possèdent alors un état comme les PV restants ou l'orientation).
+- **Effets (`effects`)** : Un tableau optionnel d'effets mécaniques. Si absent, la carte est considérée comme une "vanilla" (uniquement des statistiques).
+- **Exécution d'Item (`execute`)** : Permet de définir le comportement actif des objets directement dans leur définition statique.
 
 ---
 
-## Pourquoi cette architecture ?
+## Résumé
 
-| Avantage        | Description                                                                                                                                              |
-| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Modularité**  | Facilite le travail collaboratif : deux développeurs peuvent créer deux cartes différentes sans jamais causer de conflits dans un fichier central géant. |
-| **Lisibilité**  | Tout ce qui concerne une carte (son texte, son image et son code de capacité) est regroupé au même endroit.                                              |
-| **Performance** | Le moteur identifie immédiatement les cartes "simples" sans avoir à parser des tableaux d'effets vides.                                                  |
+Le `cardDefinition` est responsable de :
 
----
-
-## Exemple de Structure
-
-```typescript
-// Exemple théorique dans src/data/cards/mercenary/healer.ts
-export const HealerDefinition: CardDefinition = {
-  id: "merc-01",
-  name: "Prêtre Errant",
-  cardType: "character",
-  faction: "Mercenary",
-  // ...stats...
-  effects: [
-    {
-      id: "heal-action",
-      type: "feat",
-      name: "Soin Rapide",
-      // Logique de l'effet...
-    },
-  ],
-};
-```
+- **Structurer la création** de nouvelles cartes.
+- **Lier les données statiques aux scripts d'effets** dynamiques.
+- **Servir de base** à la génération automatique de la base de données globale des cartes.
