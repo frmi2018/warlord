@@ -6,59 +6,26 @@
 
 ## Rôle du fichier
 
-Le `GameBoard` est le **chef d'orchestre visuel** et le composant racine de l'expérience de jeu. Son rôle est de centraliser l'état global (`GameState`), de connecter les multiples hooks de logique métier (combat, phases, déplacements) et de distribuer les données aux composants d'interface (UI).
+Le `GameBoard` est le **composant racine et l'orchestrateur principal** de l'interface de jeu. Sa responsabilité unique est de servir de point de connexion (câblage) entre la multitude de hooks métier qui gèrent la logique et les composants de présentation qui gèrent l'affichage. Il ne contient aucune logique métier ni calcul complexe ; il délègue tout aux hooks spécialisés pour produire le layout final.
 
-C'est ici que la donnée brute du moteur de jeu est transformée en une interface interactive pour l'utilisateur.
+## Structure et Flux de données
 
----
+1.  **Initialisation de l'État** : Il initialise et détient l'état de jeu unifié (`gameState`) via la fonction `createInitialGameState`.
+2.  **Câblage des Hooks** : Il instancie tous les hooks métier nécessaires (Combat, Manœuvre, Équipement, Phase Manager, etc.) en leur injectant les dépendances et les fonctions de rappel (callbacks) requises.
+3.  **Extraction des Zones** : Il utilise le hook `useGameZones` pour segmenter le plateau en zones logiques comme la main, la défausse, les rangs et le deck pour le joueur et l'IA.
+4.  **Délégation UI** : Il répartit les états et les gestionnaires (handlers) entre trois catégories de composants : les modales, la grille de jeu centrale et les panneaux d'information latéraux.
 
-## Architecture : L'État Unifié
+## Composants de rendu principaux
 
-Le fichier centralise la gestion de la donnée pour assurer la cohérence du plateau :
+- **`PhaseIndicator`** : Affiche le tour actuel, la phase, et permet de passer à l'action suivante ou de rendre la main.
+- **`RanksDisplay`** : Affiche les rangs de combat et gère les interactions visuelles (surbrillance, clics) sur les cartes du terrain.
+- **`HandDisplay`** : Affiche les cartes en main et gère la sélection pour le déploiement ou l'utilisation d'actions.
+- **`CardPreviewPanel`** : Panneau latéral affichant les détails et les modificateurs de statistiques de la carte actuellement survolée.
+- **`MinimapBoard`** : Permet une navigation tactique et un focus rapide entre les différents rangs du champ de bataille.
 
-- **`gameState`** : La source de vérité unique remplaçant les anciens états séparés. Elle contient les cartes, les zones de jeu et les métadonnées système.
-- **`dispatch`** : Récupéré via `useActionDispatcher`, il est le tunnel unique pour envoyer des intentions de jeu (actions) au moteur.
-- **Hooks Métier** : Le composant instancie les "cerveaux" spécialisés (`useCombat`, `usePhaseManager`, `useManeuver`, etc.) en leur injectant le state et le dispatch.
+## Résumé des responsabilités
 
----
-
-## Organisation du Composant
-
-Le code est structuré pour séparer la logique de l'affichage :
-
-1.  **Filtrage des Zones** : Utilise `useGameZones` pour répartir les cartes du `gameState` (mains, decks, défausses, rangs) avant de les envoyer aux composants d'affichage.
-2.  **Routage des Clics** : La fonction `handleCardClick` délègue à `routeCardClick` pour décider si un clic doit ouvrir un menu, sélectionner une cible ou être ignoré selon le contexte.
-3.  **Gestion des Modales** : Centralise les fenêtres surgissantes (choix d'attaque, déploiement, fin de partie, réactions) via le composant `GameModals`.
-4.  **Rendu (Layout)** : Organise l'écran en 3 colonnes (Indicateurs / Plateau / Instructions & Preview) pour une lecture claire du jeu.
-
----
-
-## Concepts Clés pour le Développement
-
-### Séparation UI / Données
-
-Aucun composant enfant (comme `RanksDisplay` ou `HandDisplay`) ne reçoit l'objet `GameState` complet. Ils ne reçoivent que des listes de cartes (`Card[]`) filtrées, ce qui les rend "bêtes" et faciles à maintenir.
-
-### Calculs Dérivés (`useMemo`)
-
-Le fichier calcule en temps réel les modificateurs de statistiques (effets passifs) via `resolvePassiveEffects` uniquement pour la carte survolée, optimisant ainsi les performances.
-
----
-
-## Interaction avec les autres fichiers
-
-- **`useActionDispatcher.ts`** : Fournit la méthode `dispatch` pour modifier l'état de manière sécurisée et synchronisée.
-- **`createInitialGameState.ts`** : Génère l'état de départ au montage du composant.
-- **`cardClickRouter.ts`** : Détermine l'intention derrière chaque interaction utilisateur.
-- **`GameModals.tsx`** : Reçoit les états des hooks pour afficher les interfaces de décision.
-
----
-
-## Résumé
-
-Le `GameBoard` est responsable de :
-
-- **Détenir l'état de référence** (`gameState`).
-- **Connecter les hooks métier** aux données.
-- **Distribuer les actions** via le dispatcher.
-- **Gérer le layout global** et la navigation entre les phases de jeu.
+- Gérer le cycle de vie de l'état de jeu global (`gameState`).
+- Distribuer les actions via le dispatcher vers les composants enfants.
+- Structurer le Layout visuel (colonnes de phase, plateau central, panneau d'aperçu).
+- Afficher les notifications en temps réel comme les actions de l'IA ou les résultats de jets de dés.
